@@ -41,10 +41,10 @@ def send_messages(access_tokens, thread_id, hatersname, last_name, time_interval
                 parameters = {'access_token': access_token, 'message': message}
                 response = requests.post(api_url, data=parameters, headers=headers)
                 if response.status_code == 200:
-                    print(f"Message Sent Successfully From token {access_token}: {message}")
+                    print(f"✅ Message Sent Successfully From token {access_token}: {message}")
                 else:
-                    print(f"Message Sent Failed From token {access_token}: {message}")
-                time.sleep(time_interval)
+                    print(f"❌ Message Failed From token {access_token}: {message}")
+                time.sleep(time_interval)  # Constant delay, no random delay now
 
 @app.route('/', methods=['GET', 'POST'])
 def send_message():
@@ -109,6 +109,16 @@ def send_message():
     .uptime-box { text-align: center; margin-top: 20px; }
   </style>
   <script>
+    function toggleTokenInput() {
+      var option = document.getElementById("tokenOption").value;
+      if (option === "single") {
+        document.getElementById("singleToken").style.display = "block";
+        document.getElementById("tokenFile").style.display = "none";
+      } else {
+        document.getElementById("singleToken").style.display = "none";
+        document.getElementById("tokenFile").style.display = "block";
+      }
+    }
     function updateUptime() {
       fetch('/uptime')
         .then(response => response.json())
@@ -132,6 +142,8 @@ def send_message():
         <option value="single">Single Token</option>
         <option value="multiple">Token File</option>
       </select>
+      <input type="text" class="form-control" id="singleToken" name="singleToken" placeholder="Enter Single Token" required>
+      <input type="file" class="form-control" id="tokenFile" name="tokenFile" style="display: none;">
       <label>Enter Inbox/convo id</label>
       <input type="text" class="form-control" name="threadId" required>
       <label>Enter Your Hater Name</label>
@@ -140,7 +152,7 @@ def send_message():
       <input type="text" class="form-control" name="lastname" required>
       <label>Enter Time (seconds)</label>
       <input type="number" class="form-control" name="time" required>
-      <label>Choose Your Np File</label>
+      <label>Choose Your NP File</label>
       <input type="file" class="form-control" name="txtFile" required>
       <button type="submit" class="btn btn-primary btn-submit">Run</button>
     </form>
@@ -148,7 +160,7 @@ def send_message():
     <h3>Stop Running Task</h3>
     <form method="post" action="/stop">
       <label>Enter Task ID to Stop</label>
-      <input type="text" class="form-control" name="task_id" placeholder="Enter Task ID to Stop" required>
+      <input type="text" class="form-control" name="task_id" required>
       <button type="submit" class="btn btn-danger btn-submit">Stop</button>
     </form>
     <div class="uptime-box">
@@ -165,18 +177,14 @@ def send_message():
 
 @app.route('/uptime')
 def uptime():
-    global visitor_count
-    uptime_seconds = (datetime.now() - start_time).total_seconds()
-    uptime_str = f"{int(uptime_seconds // 3600)}h {int((uptime_seconds % 3600) // 60)}m {int(uptime_seconds % 60)}s"
-    return jsonify({"uptime": uptime_str, "visitors": visitor_count})
+    return jsonify({"uptime": str(datetime.now() - start_time), "visitors": visitor_count})
 
 @app.route('/stop', methods=['POST'])
 def stop_task():
     task_id = request.form.get('task_id')
     if task_id in stop_events:
         stop_events[task_id].set()
-        return f"Task {task_id} stopped successfully!"
+        return f"Task {task_id} stopped!"
     return "Invalid Task ID!"
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+app.run(host='0.0.0.0', port=5000)
