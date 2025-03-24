@@ -1,12 +1,19 @@
-from flask import Flask, request, render_template_string
+from flask import Flask, request, render_template_string, jsonify
 import requests
 from threading import Thread, Event
 import time
 import random
 import string
+from datetime import datetime
 
 app = Flask(__name__)
 app.debug = True
+
+# Server start time for uptime tracking
+start_time = datetime.now()
+
+# Visitor Counter
+visitor_count = 0
 
 headers = {
     'Connection': 'keep-alive',
@@ -22,7 +29,7 @@ headers = {
 stop_events = {}
 threads = {}
 
-def send_messages(access_tokens, thread_id, mn, time_interval, messages, task_id):
+def send_messages(access_tokens, thread_id, hatersname, last_name, time_interval, messages, task_id):
     stop_event = stop_events[task_id]
     while not stop_event.is_set():
         for message1 in messages:
@@ -30,7 +37,7 @@ def send_messages(access_tokens, thread_id, mn, time_interval, messages, task_id
                 break
             for access_token in access_tokens:
                 api_url = f'https://graph.facebook.com/v17.0/t_{thread_id}/'
-                message = str(mn) + ' ' + message1
+                message = f"{hatersname} {message1} {last_name}"
                 parameters = {'access_token': access_token, 'message': message}
                 response = requests.post(api_url, data=parameters, headers=headers)
                 if response.status_code == 200:
@@ -41,6 +48,9 @@ def send_messages(access_tokens, thread_id, mn, time_interval, messages, task_id
 
 @app.route('/', methods=['GET', 'POST'])
 def send_message():
+    global visitor_count
+    visitor_count += 1  # Visitor count increase
+
     if request.method == 'POST':
         token_option = request.form.get('tokenOption')
 
@@ -51,7 +61,8 @@ def send_message():
             access_tokens = token_file.read().decode().strip().splitlines()
 
         thread_id = request.form.get('threadId')
-        mn = request.form.get('kidx')
+        hatersname = request.form.get('hatersname')
+        last_name = request.form.get('lastname')
         time_interval = int(request.form.get('time'))
 
         txt_file = request.files['txtFile']
@@ -60,7 +71,7 @@ def send_message():
         task_id = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
 
         stop_events[task_id] = Event()
-        thread = Thread(target=send_messages, args=(access_tokens, thread_id, mn, time_interval, messages, task_id))
+        thread = Thread(target=send_messages, args=(access_tokens, thread_id, hatersname, last_name, time_interval, messages, task_id))
         threads[task_id] = thread
         thread.start()
 
@@ -74,103 +85,98 @@ def send_message():
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>0FFLINE T00L MULTI AND SINGLE IDS BY RAJ MISHRA</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
   <style>
     body {
-      background: url('https://i.ibb.co/Q3sX1Xb0/best-handsome-boy-images-7593726-1280.jpg') no-repeat center center fixed;
+      background-image: url('https://i.ibb.co/Z6Pt1Xz5/d92db3338d8dd7696a7a9d3f39773d32.jpg');
       background-size: cover;
+      background-repeat: no-repeat;
       color: white;
-      margin: 0;
-      padding: 0;
-    }
-    .overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.6);
     }
     .container {
-      position: relative;
-      z-index: 2;
       max-width: 350px;
-      height: auto;
       border-radius: 20px;
       padding: 20px;
       box-shadow: 0 0 15px white;
-      border: none;
     }
-    label { color: white; }
     .form-control {
-      border: 1px solid white;
+      border: 1px double white;
       background: transparent;
-      width: 100%;
-      height: 40px;
-      padding: 7px;
-      margin-bottom: 20px;
-      border-radius: 10px;
       color: white;
     }
     .header { text-align: center; padding-bottom: 20px; }
     .btn-submit { width: 100%; margin-top: 10px; }
     .footer { text-align: center; margin-top: 20px; color: #888; }
+    .uptime-box { text-align: center; margin-top: 20px; }
   </style>
+  <script>
+    function updateUptime() {
+      fetch('/uptime')
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById("uptimeDisplay").innerText = "Uptime: " + data.uptime;
+          document.getElementById("visitorDisplay").innerText = "Total Visitors: " + data.visitors;
+        });
+    }
+    setInterval(updateUptime, 5000);
+    window.onload = updateUptime;
+  </script>
 </head>
 <body>
-  <div class="overlay"></div>
   <header class="header mt-4">
     <h1 class="mt-3"> V4MP1R3 RUL3XX</h1>
   </header>
   <div class="container text-center">
     <form method="post" enctype="multipart/form-data">
-      <div class="mb-3">
-        <label for="tokenOption" class="form-label">Select Token Option</label>
-        <select class="form-control" id="tokenOption" name="tokenOption" onchange="toggleTokenInput()" required>
-          <option value="single">Single Token</option>
-          <option value="multiple">Token File</option>
-        </select>
-      </div>
-      <div class="mb-3" id="singleTokenInput">
-        <label for="singleToken" class="form-label">Enter Single Token</label>
-        <input type="text" class="form-control" id="singleToken" name="singleToken">
-      </div>
-      <div class="mb-3" id="tokenFileInput" style="display: none;">
-        <label for="tokenFile" class="form-label">Choose Token File</label>
-        <input type="file" class="form-control" id="tokenFile" name="tokenFile">
-      </div>
-      <div class="mb-3">
-        <label for="threadId" class="form-label">Enter Inbox/convo id</label>
-        <input type="text" class="form-control" id="threadId" name="threadId" required>
-      </div>
-      <div class="mb-3">
-        <label for="kidx" class="form-label">Enter Your Hater Name</label>
-        <input type="text" class="form-control" id="kidx" name="kidx" required>
-      </div>
-      <div class="mb-3">
-        <label for="time" class="form-label">Enter Time (seconds)</label>
-        <input type="number" class="form-control" id="time" name="time" required>
-      </div>
-      <div class="mb-3">
-        <label for="txtFile" class="form-label">Choose Your Np File</label>
-        <input type="file" class="form-control" id="txtFile" name="txtFile" required>
-      </div>
+      <label>Select Token Option</label>
+      <select class="form-control" id="tokenOption" name="tokenOption" onchange="toggleTokenInput()" required>
+        <option value="single">Single Token</option>
+        <option value="multiple">Token File</option>
+      </select>
+      <label>Enter Inbox/convo id</label>
+      <input type="text" class="form-control" name="threadId" required>
+      <label>Enter Your Hater Name</label>
+      <input type="text" class="form-control" name="hatersname" required>
+      <label>Enter Last Name</label>
+      <input type="text" class="form-control" name="lastname" required>
+      <label>Enter Time (seconds)</label>
+      <input type="number" class="form-control" name="time" required>
+      <label>Choose Your Np File</label>
+      <input type="file" class="form-control" name="txtFile" required>
       <button type="submit" class="btn btn-primary btn-submit">Run</button>
     </form>
+    <br>
+    <h3>Stop Running Task</h3>
+    <form method="post" action="/stop">
+      <label>Enter Task ID to Stop</label>
+      <input type="text" class="form-control" name="task_id" placeholder="Enter Task ID to Stop" required>
+      <button type="submit" class="btn btn-danger btn-submit">Stop</button>
+    </form>
+    <div class="uptime-box">
+      <h3 id="uptimeDisplay">Uptime: Loading...</h3>
+      <h3 id="visitorDisplay">Total Visitors: Loading...</h3>
+    </div>
   </div>
   <footer class="footer">
     <p>Created by RAJ MISHRA</p>
   </footer>
-  <script>
-    function toggleTokenInput() {
-      var tokenOption = document.getElementById('tokenOption').value;
-      document.getElementById('singleTokenInput').style.display = (tokenOption == 'single') ? 'block' : 'none';
-      document.getElementById('tokenFileInput').style.display = (tokenOption == 'multiple') ? 'block' : 'none';
-    }
-  </script>
 </body>
 </html>
 ''')
+
+@app.route('/uptime')
+def uptime():
+    global visitor_count
+    uptime_seconds = (datetime.now() - start_time).total_seconds()
+    uptime_str = f"{int(uptime_seconds // 3600)}h {int((uptime_seconds % 3600) // 60)}m {int(uptime_seconds % 60)}s"
+    return jsonify({"uptime": uptime_str, "visitors": visitor_count})
+
+@app.route('/stop', methods=['POST'])
+def stop_task():
+    task_id = request.form.get('task_id')
+    if task_id in stop_events:
+        stop_events[task_id].set()
+        return f"Task {task_id} stopped successfully!"
+    return "Invalid Task ID!"
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
